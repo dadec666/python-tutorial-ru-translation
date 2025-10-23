@@ -1,0 +1,61 @@
+name: Create Chapter Issues & Project Board
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-board-and-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      projects: write
+      contents: write
+    steps:
+      - name: Create project (classic) via gh cli
+        uses: cli/cli-action@v2
+        with:
+          version: latest
+      - name: Auth GH CLI
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+      - name: Create Project
+        run: |
+          gh api --method POST repos/${{ github.repository }}/projects \
+            -H "Accept: application/vnd.github.inertia-preview+json" \
+            -f name='Перевод учебника Python — Канбан'
+      - name: Get Project ID
+        id: proj
+        run: |
+          PID=$(gh api repos/${{ github.repository }}/projects -H "Accept: application/vnd.github.inertia-preview+json" | jq -r '.[0].id')
+          echo "pid=$PID" >> $GITHUB_OUTPUT
+      - name: Create issues per chapter
+        run: |
+          declare -a CHAPS=(
+            "1. Whetting Your Appetite (Пробуждение аппетита)"
+            "2. Using the Python Interpreter (Использование интерпретатора)"
+            "3. An Informal Introduction to Python (Неформальное введение в Python)"
+            "4. More Control Flow Tools (Инструменты управления потоком)"
+            "5. Data Structures (Структуры данных)"
+            "6. Modules (Модули)"
+            "7. Input and Output (Ввод и вывод)"
+            "8. Errors and Exceptions (Ошибки и исключения)"
+            "9. Classes (Классы)"
+            "10. Brief Tour of the Standard Library (Обзор стандартной библиотеки)"
+            "11. Brief Tour Part II (Обзор стандартной библиотеки — Часть II)"
+            "12. Virtual Environments and Packages (Виртуальные окружения и пакеты)"
+            "13. What Now? (Что дальше?)"
+          )
+          for title in "${CHAPS[@]}"; do
+            gh issue create --title "Перевод: ${title}" --body "Задача по переводу главы: ${title}. Используйте шаблон Chapter Translation." --label chapter,translation,tutorial
+          done
+      - name: Add issues to project (classic)
+        run: |
+          for num in $(gh issue list --state open --json number --jq '.[].number'); do
+            gh api --method POST projects/${{ steps.proj.outputs.pid }}/columns \
+              -H "Accept: application/vnd.github.inertia-preview+json" \
+              -f name='To do' >/dev/null || true
+            CID=$(gh api projects/${{ steps.proj.outputs.pid }}/columns -H "Accept: application/vnd.github.inertia-preview+json" | jq -r '.[0].id')
+            gh api --method POST projects/columns/$CID/cards \
+              -H "Accept: application/vnd.github.inertia-preview+json" \
+              -f content_id=$(gh api repos/${{ github.repository }}/issues/$num | jq -r '.id') \
+              -f content_type='Issue'
+          done
