@@ -1,0 +1,46 @@
+name: Sync with Transifex
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'
+
+jobs:
+  pull-tx:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Transifex Client
+        run: |
+          pipx install transifex-client
+      - name: Configure .transifexrc
+        run: |
+          echo "[https://www.transifex.com]" > ~/.transifexrc
+          echo "hostname = https://www.transifex.com" >> ~/.transifexrc
+          echo "username = ${TX_USERNAME}" >> ~/.transifexrc
+          echo "password = ${TX_PASSWORD}" >> ~/.transifexrc
+          echo "token = ${TX_TOKEN}" >> ~/.transifexrc
+        env:
+          TX_USERNAME: ${{ secrets.TX_USERNAME }}
+          TX_PASSWORD: ${{ secrets.TX_PASSWORD }}
+          TX_TOKEN: ${{ secrets.TX_TOKEN }}
+      - name: Init tx config if missing
+        run: |
+          test -f .tx/config || {
+            mkdir -p .tx
+            cat > .tx/config << 'CFG'
+            [main]
+            host = https://www.transifex.com
+            lang_map = ru:ru
+            CFG
+          }
+      - name: Pull translations from Transifex
+        run: |
+          tx pull -a --mode=reviewed --minimum-perc=1 || true
+      - name: Commit updates
+        run: |
+          git config user.name "tx-bot"
+          git config user.email "tx-bot@example.com"
+          git add -A
+          git commit -m "chore(tx): sync translations" || echo "nothing to commit"
+          git push || true
