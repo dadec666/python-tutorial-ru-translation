@@ -1,0 +1,59 @@
+name: CI — Lint PO & Sphinx Preview
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint-po:
+    name: Lint .po files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install gettext for msgfmt
+        run: sudo apt-get update && sudo apt-get install -y gettext
+      - name: Find and lint .po files
+        run: |
+          shopt -s globstar || true
+          errs=0
+          for f in **/*.po; do
+            [ -f "$f" ] || continue
+            echo "Linting $f"
+            if ! msgfmt -c -v "$f" -o /dev/null; then
+              echo "::error file=$f::msgfmt failed"
+              errs=1
+            fi
+          done
+          exit $errs
+
+  sphinx-preview:
+    name: Build Sphinx (preview)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Sphinx & deps
+        run: |
+          pip install -U pip
+          pip install sphinx sphinx-intl docutils
+      - name: Prepare minimal Sphinx project
+        run: |
+          mkdir -p preview
+          cat > preview/conf.py << 'PY'
+          project = 'Python Tutorial RU — Preview'
+          extensions = ['sphinx.ext.doctest']
+          language = 'ru'
+          html_theme = 'alabaster'
+          PY
+          echo '# Предпросмотр' > preview/index.rst
+      - name: Build HTML
+        run: sphinx-build -b html preview _build/html
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sphinx-html
+          path: _build/html
