@@ -1,0 +1,79 @@
+name: ❓ Вопрос по переводу
+description: Задать вопрос о терминологии или стиле перевода
+title: "[Вопрос] "
+labels: ["question", "translation"]
+assignees: ["dadec666"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Используйте этот шаблон для вопросов о переводе терминов, спорных моментов и обсуждения стиля.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: "Вопрос"
+      description: "Опишите ваш вопрос подробно"
+      placeholder: "Например: Как лучше перевести 'list comprehension' - дословно или оставить английский термин?"
+    validations:
+      required: true
+
+  - type: input
+    id: term_or_phrase
+    attributes:
+      label: "Термин или фраза"
+      description: "О каком конкретном термине идет речь?"
+      placeholder: "Например: list comprehension, generator expression, monkey patching"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "Контекст"
+      description: "Где встречается этот термин? Приведите пример из текста"
+      placeholder: |
+        Пример:
+        Глава 5, раздел о List Comprehensions:
+        "List comprehensions provide a concise way to create lists."
+    validations:
+      required: true
+
+  - type: textarea
+    id: options
+    attributes:
+      label: "Варианты перевода"
+      description: "Какие варианты перевода вы рассматриваете?"
+      placeholder: |
+        Пример:
+        1. Генератор списка (дословный перевод)
+        2. List comprehension (оставить английский термин)
+        3. Компрехеншен списка (транслитерация)
+    validations:
+      required: true
+
+  - type: textarea
+    id: research
+    attributes:
+      label: "Исследование"
+      description: "Как этот термин переводят в других русскоязычных ресурсах?"
+      placeholder: |
+        Например:
+        - В переводе книги "Python Tricks" используется "генератор списка"
+        - На хабре часто встречается "list comprehension" без перевода
+    validations:
+      required: false
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: "Частота использования"
+      description: "Как часто этот термин встречается в документации?"
+      options:
+        - "Очень часто (базовый термин)"
+        - "Часто (важный термин)"
+        - "Иногда (специализированный термин)"
+        - "Редко (одиночное упоминание)"
+    validations:
+      required: true
